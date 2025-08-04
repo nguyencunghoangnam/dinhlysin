@@ -1,0 +1,457 @@
+
+<!DOCTYPE html>
+
+<html lang="vi">
+<head>
+<meta charset="utf-8"/>
+<title>Khám phá định lý Sin</title>
+<style>
+    :root {
+      --main-color: #2c3e50;
+      --accent-color: #3498db;
+      --bg-light: #f4f6f8;
+      --box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      background-color: var(--bg-light);
+      color: var(--main-color);
+      padding-top: 100px;
+    }
+    .page-header {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 0;
+      text-align: center;
+      font-size: 28px;
+      font-weight: bold;
+      background: linear-gradient(to right, #3498db, #2ecc71);
+      color: white;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 10;
+    }
+    .form-section {
+      max-width: 360px;
+      background: white;
+      padding: 20px 25px;
+      border-radius: 12px;
+      box-shadow: var(--box-shadow);
+    }
+    label {
+      margin-top: 10px;
+      font-weight: bold;
+      display: block;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 8px;
+      width: 100%;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    #trigóc-canvas {
+      border: 2px solid #ccc;
+      border-radius: 8px;
+      background-color: white;
+      box-shadow: var(--box-shadow);
+    }
+    .question {
+      font-weight: bold;
+      margin-bottom: 20px;
+      font-size: 16px;
+    }
+    #solution {
+      margin-top: 15px;
+      padding: 10px;
+      background: #ecf9f9;
+      border-left: 4px solid var(--accent-color);
+      border-radius: 8px;
+    }
+  
+    .info-section {
+      width: 300px;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: var(--box-shadow);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+</style>
+</head>
+<body>
+<div class="page-header">🔍 Khám phá định lý Sin</div>
+<div class="form-section">
+<div class="question" id="question">Cho tam giác ABC, biết AB = 80, góc A = 45°, góc B = 60°. Tính cạnh BC.</div>
+<label for="ab">Cạnh AB:</label>
+<input id="ab" min="1" type="number" value="80"/>
+<label for="gócA">Góc A (độ):</label>
+<input id="gócA" max="179" min="1" type="number" value="45"/>
+<label for="gócB">Góc B (độ):</label>
+<input id="gócB" max="179" min="1" type="number" value="60"/>
+<button onclick="toggleSinSolution()">Hiện/Ẩn tính BC theo định lý sin</button>
+<div id="sin-solution" style="display:none; margin-top:10px; color:blue;"></div>
+<button onclick="toggleBHSolution()">Hiện/Ẩn tính BC bằng cách kẻ đường cao BH</button>
+<div id="ah-solution" style="display:none; margin-top:10px; color:purple;"></div>
+<button onclick="randomizeInputs()">Ngẫu nhiên</button><button onclick="generateTestQuestion()" style="margin-top: 8px; width: 100%;">Câu hỏi kiểm tra</button>
+<div><strong>Đáp án:</strong> <span id="result">BC = ?</span></div>
+<div id="solution" style="color: green;"></div>
+</div>
+<canvas height="500" id="trigóc-canvas" width="500"></canvas>
+<script>
+    const abInput = document.getElementById("ab");
+    const gócAInput = document.getElementById("gócA");
+    const gócBInput = document.getElementById("gócB");
+    const questionEl = document.getElementById("question");
+    const resultEl = document.getElementById("result");
+    const canvas = document.getElementById("trigóc-canvas");
+    const ctx = canvas.getContext("2d");
+
+    function toRadians(deg) {
+      return deg * Math.PI / 180;
+    }
+
+    function updateQuestionAndAnswer() {
+
+document.getElementById("sin-solution").style.display = "none";
+document.getElementById("sin-solution").innerHTML = "";
+document.getElementById("ah-solution").style.display = "none";
+document.getElementById("ah-solution").innerHTML = "";
+      const AB = parseFloat(abInput.value);
+      const gócA = parseFloat(gócAInput.value);
+      const gócB = parseFloat(gócBInput.value);
+      const gócC = 180 - gócA - gócB;
+      if (gócC <= 0) {
+        resultEl.textContent = "Tam giác không hợp lệ!";
+        document.getElementById("sin-solution").style.display = "none";
+        document.getElementById("sin-solution").innerHTML = "";
+        document.getElementById("ah-solution").style.display = "none";
+        document.getElementById("ah-solution").innerHTML = "";
+        return;
+      }
+      const gócARad = toRadians(gócA);
+      const gócCRad = toRadians(gócC);
+      const BC = (Math.sin(gócARad) / Math.sin(gócCRad)) * AB;
+      questionEl.textContent = `Cho tam giác ABC, biết AB = ${AB}, góc A = ${gócA}°, góc B = ${gócB}°. Tính cạnh BC.`;
+      resultEl.textContent = `BC = ${BC.toFixed(2)}`;
+      drawTrigócSin(AB, gócA, gócB);
+    }
+
+    function drawTrigócSin(AB, gócA, gócB) {
+      const scale = 4;
+      const offsetX = 80;
+      const offsetY = 400;
+
+      const Ax = offsetX;
+      const Ay = offsetY;
+      const Bx = offsetX + AB * scale;
+      const By = offsetY;
+
+      const gócARad = toRadians(gócA);
+      const gócBRad = toRadians(gócB);
+      const gócC = 180 - gócA - gócB;
+      const gócCRad = toRadians(gócC);
+
+      const AC = (Math.sin(gócBRad) / Math.sin(gócCRad)) * AB;
+
+      const Cx = offsetX + AC * scale * Math.cos(gócARad);
+      const Cy = offsetY - AC * scale * Math.sin(gócARad);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.beginPath();
+      ctx.moveTo(Ax, Ay);
+      ctx.lineTo(Bx, By);
+      ctx.lineTo(Cx, Cy);
+      ctx.closePath();
+      ctx.stroke();
+
+      ctx.fillText("A", Ax - 10, Ay + 15);
+      ctx.fillText("B", Bx + 5, By + 15);
+      ctx.fillText("C", Cx + 5, Cy - 10);
+
+      // Vẽ đường cao BH từ B xuống AC
+      const dx = Cx - Ax;
+      const dy = Cy - Ay;
+      const t = ((Bx - Ax) * dx + (By - Ay) * dy) / (dx * dx + dy * dy);
+      const Hx = Ax + t * dx;
+      const Hy = Ay + t * dy;
+
+      
+      // BH - nét liền màu đỏ
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "red";
+      ctx.beginPath();
+      ctx.moveTo(Bx, By);
+      ctx.lineTo(Hx, Hy);
+      ctx.stroke();
+
+      // AH - nét đứt màu đen
+      ctx.setLineDash([5, 5]);
+      ctx.strokeStyle = "black";
+      ctx.beginPath();
+      ctx.moveTo(Ax, Ay);
+      ctx.lineTo(Hx, Hy);
+      ctx.stroke();
+
+      // CH - nét đứt màu đen
+      ctx.beginPath();
+      ctx.moveTo(Cx, Cy);
+      ctx.lineTo(Hx, Hy);
+      ctx.stroke();
+
+      ctx.setLineDash([]);
+      ctx.strokeStyle = "black";
+      ctx.fillText("H", Hx - 10, Hy);
+
+
+    }
+
+    function randomizeInputs() {
+      abInput.value = Math.floor(Math.random() * 81) + 20;
+      gócAInput.value = Math.floor(Math.random() * 60) + 30;
+      gócBInput.value = Math.floor(Math.random() * (180 - gócAInput.value - 20)) + 10;
+      updateQuestionAndAnswer();
+    }
+
+    function toggleSinSolution() {
+      const AB = parseFloat(abInput.value);
+      const gócA = parseFloat(gócAInput.value);
+      const gócB = parseFloat(gócBInput.value);
+      const gócC = 180 - gócA - gócB;
+      const gócARad = toRadians(gócA);
+      const gócCRad = toRadians(gócC);
+      const BC = (Math.sin(gócARad) / Math.sin(gócCRad)) * AB;
+
+      const solDiv = document.getElementById("sin-solution");
+      if (solDiv.style.display === "none") {
+        solDiv.style.display = "block";
+        solDiv.innerHTML = `
+          <strong>Áp dụng định lý sin:</strong><br/>
+          <math>
+            <mrow>
+              <mfrac>
+                <mi>AB</mi>
+                <mi>sinC</mi>
+              </mfrac>
+              <mo>=</mo>
+              <mfrac>
+                <mi>BC</mi>
+                <mi>sinA</mi>
+              </mfrac>
+              <mo>⇒</mo>
+              <mi>BC</mi>
+              <mo>=</mo>
+              <mfrac>
+                <mrow><mi>sin</mi><mo>(</mo><mn>${gócA}°</mn><mo>)</mo></mrow>
+                <mrow><mi>sin</mi><mo>(</mo><mn>${180 - gócA - gócB}°</mn><mo>)</mo></mrow>
+              </mfrac>
+              <mo>×</mo>
+              <mi>${AB}</mi>
+            </mrow>
+          </math>
+          <div>
+            ⇒ BC = ${BC.toFixed(2)}
+          </div>
+        `;
+      } else {
+        solDiv.style.display = "none";
+        solDiv.innerHTML = "";
+      }
+    }
+
+    function toggleBHSolution() {
+      const AB = parseFloat(abInput.value);
+      const gócA = parseFloat(gócAInput.value);
+      const gócB = parseFloat(gócBInput.value);
+
+      const gócBRad = toRadians(gócB);
+
+      const BH = AB * Math.sin(gócARad);
+      
+      const BC = Math.sqrt(BH * BH + CH * CH);
+
+      const solDiv = document.getElementById("ah-solution");
+      if (solDiv.style.display === "none") {
+        solDiv.style.display = "block";
+        solDiv.innerHTML = `
+          <strong>Giải bằng cách dựng đường cao BH từ B xuống cạnh AC:</strong>
+          <math><mrow><mi>BH</mi><mo>=</mo><mi>AB</mi><mo>×</mo><mi>sin</mi><mo>(</mo><mn>${gócB}°</mn><mo>)</mo></mrow></math>
+          <math><mrow><mi>CH</mi><mo>=</mo><mi>AB</mi><mo>×</mo><mi>cos</mi><mo>(</mo><mn>${gócB}°</mn><mo>)</mo></mrow></math>
+          <math><mrow><msup><mi>BC</mi><mn>2</mn></msup><mo>=</mo><msup><mi>BH</mi><mn>2</mn></msup><mo>+</mo><msup><mi>CH</mi><mn>2</mn></msup></mrow></math>
+          <math><mrow><mi>BC</mi><mo>=</mo><msqrt><mn>${(BH*BH + CH*CH).toFixed(2)}</mn></msqrt><mo>=</mo><mn>${BC.toFixed(2)}</mn></mrow></math>
+        `;
+      } else {
+        solDiv.style.display = "none";
+        solDiv.innerHTML = "";
+      }
+    }
+
+    abInput.addEventListener("input", updateQuestionAndAnswer);
+    gócAInput.addEventListener("input", updateQuestionAndAnswer);
+    gócBInput.addEventListener("input", updateQuestionAndAnswer);
+
+    updateQuestionAndAnswer();
+  
+    function toggleBHSolution() {
+      const AB = parseFloat(abInput.value);
+      const gócA = parseFloat(gócAInput.value);
+      const gócB = parseFloat(gócBInput.value);
+      const gócC = 180 - gócA - gócB;
+      const gócARad = toRadians(gócA);
+      const gócCRad = toRadians(gócC);
+
+      const BH = AB * Math.sin(gócARad);
+      
+      const sinA = Math.sin(gócARad);
+      const sinC = Math.sin(gócCRad);
+      const BC = (sinA / sinC) * AB;
+
+      const solDiv = document.getElementById("ah-solution");
+      if (solDiv.style.display === "none") {
+        solDiv.style.display = "block";
+        solDiv.innerHTML = `
+          <strong>Giải bằng cách dựng đường cao BH từ B xuống cạnh AC:</strong><br/><math><mrow><mi>\góc C</mi><mo>=</mo><mn>180</mn><mo>−</mo><mn>${gócA}</mn><mo>−</mo><mn>${gócB}</mn><mo>=</mo><mn>${gócC}°</mn></mrow></math><br/><math><mrow><mi>BH</mi><mo>=</mo><mi>AB</mi><mo>×</mo><mi>sin</mi><mo>(</mo><mn>${gócA}°</mn><mo>)</mo></mrow></math><br/><math><mrow><mi>BH</mi><mo>=</mo><mi>BC</mi><mo>×</mo><mi>sin</mi><mo>(</mo><mn>${gócC}°</mn><mo>)</mo></mrow></math><br/>
+          
+                    
+          <math>
+            <mrow>
+              <mfrac>
+                <mi>AB</mi>
+                <mi>sinC</mi>
+              </mfrac>
+              <mo>=</mo>
+              <mfrac>
+                <mi>BC</mi>
+                <mi>sinA</mi>
+              </mfrac>
+              <mo>⇒</mo>
+              <mi>BC</mi>
+              <mo>=</mo>
+              <mfrac>
+                <mrow><mi>sin</mi><mo>(</mo><mn>${gócA}°</mn><mo>)</mo></mrow>
+                <mrow><mi>sin</mi><mo>(</mo><mn>${gócC}°</mn><mo>)</mo></mrow>
+              </mfrac>
+              <mo>×</mo>
+              <mi>${AB}</mi>
+            </mrow>
+          </math><br/>
+          <div>⇒ BC = ${BC.toFixed(2)}</div>
+        `;
+      } else {
+        solDiv.style.display = "none";
+        solDiv.innerHTML = "";
+      }
+    }
+
+
+function checkAnswer() {
+  const userAnswer = parseFloat(document.getElementById("user-answer").value);
+  const AB = parseFloat(abInput.value);
+  const gócA = parseFloat(gócAInput.value);
+  const gócB = parseFloat(gócBInput.value);
+  const gócC = 180 - gócA - gócB;
+  const gócARad = toRadians(gócA);
+  const gócCRad = toRadians(gócC);
+  const correctBC = (Math.sin(gócARad) / Math.sin(gócCRad)) * AB;
+  const feedback = document.getElementById("solution");
+  
+  lockInputs(false);
+  const input = document.getElementById("user-answer");
+  if (input) input.readOnly = true;
+
+  if (Math.abs(userAnswer - correctBC) < 0.1) {
+    feedback.innerHTML = "✅ Đúng rồi!";
+  } else {
+    feedback.innerHTML = "❌ Sai rồi. Hãy thử lại.";
+  }
+}
+
+
+let isLocked = false;
+function lockInputs(lock) {
+  isLocked = lock;
+  document.getElementById("ab").disabled = lock;
+  document.getElementById("gócA").disabled = lock;
+  document.getElementById("gócB").disabled = lock;
+
+  const buttons = document.querySelectorAll(".form-section button");
+  buttons.forEach(btn => {
+    if (!btn.id.includes("check-btn")) {
+      btn.disabled = lock;
+    }
+  });
+  const input = document.getElementById("user-answer");
+  if (input) input.readOnly = true;
+}
+
+function generateTestQuestion() {
+  lockInputs(true);
+  randomizeInputs();
+  resultEl.textContent = "BC = ?";
+  const existingInput = document.getElementById("user-answer");
+  const existingButton = document.getElementById("check-btn");
+  if (!existingInput) {
+    const inputBox = document.createElement("input");
+    inputBox.type = "number";
+    inputBox.id = "user-answer";
+    inputBox.placeholder = "Nhập giá trị BC";
+    inputBox.style.marginTop = "10px";
+    inputBox.style.width = "100%";
+    document.querySelector(".form-section").appendChild(inputBox);
+  }
+  if (!existingButton) {
+    const checkBtn = document.createElement("button");
+    checkBtn.textContent = "Kiểm tra";
+    checkBtn.id = "check-btn";
+    checkBtn.onclick = checkAnswer;
+    document.querySelector(".form-section").appendChild(checkBtn);
+  }
+  document.getElementById("solution").innerHTML = "";
+}
+
+</script>
+
+<div class="info-section">
+  <h3>📘 Kiến thức liên quan</h3>
+  <p>Định lý sin liên hệ các cạnh và góc của một tam giác bất kỳ:</p>
+  <p style="font-style: italic;">Trong tam giác ABC, ta có:</p>
+  <p style="text-align: center;">
+    <math>
+      <mrow>
+        <mfrac><mi>AB</mi><mi>sinC</mi></mfrac>
+        <mo>=</mo>
+        <mfrac><mi>BC</mi><mi>sinA</mi></mfrac>
+        <mo>=</mo>
+        <mfrac><mi>AC</mi><mi>sinB</mi></mfrac>
+        <mo>=</mo>
+        <mn>2</mn><mi>R</mi>
+      </mrow>
+    </math>
+  </p>
+    <hr/>
+  <p>👉 Khi biết hai góc và cạnh xen giữa (G-C-G), bạn luôn có thể áp dụng định lý sin để tìm cạnh còn lại.</p>
+</div>
+
+</body>
+</html>
